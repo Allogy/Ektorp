@@ -12,9 +12,9 @@
     <version>1.4.1-SNAPSHOT</version>
     <description>a Java CouchDB persistence library</description>
     <scm>
-        <connection>scm:git:git@github.com:helun/Ektorp.git</connection>
-        <url>scm:git:git@github.com:helun/Ektorp.git</url>
-        <developerConnection>scm:git:git@github.com:helun/Ektorp.git</developerConnection>
+        <connection>scm:git:git@github.com:Allogy/Ektorp.git</connection>
+        <url>scm:git:git@github.com:Allogy/Ektorp.git</url>
+        <developerConnection>scm:git:git@github.com:Allogy/Ektorp.git</developerConnection>
     </scm>
     <url>http://www.ektorp.org</url>
     <licenses>
