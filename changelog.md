@@ -1,5 +1,48 @@
 Change log
 ==========
+Changes in version 1.4.0
+------------------------
+Ektorp 1.4.0 updated dependencies of Jackson and HttpClient.
+### Fixes
+### Improvements
+* Added support for the HEAD request of a document to obtain the latest revision.
+* Added support for handling compressed content.
+* Added an overload to CouchDbInstance.checkIfDbExists which takes a string for the name of the DB.
+* Fix a bug where attempting to create a document with ID the empty string could result in the creation of a new database, or an unhelpful error message.
+* Add support for retrieving the set of active tasks.
+* Moved info logging to after property read
+* Change ReplicationStatus.History.recordedSeq to JsonNode since it could be String for BigCouch/Cloudant
+* Fix idle connection monitoring
+* Fix memory leak in cleanup task
+* Updated the DocumentChange interface to include a getter for all revisions, including conflicts, if they are provided by the changes feed.
+* Workaround for issue #88 - use AsyncTask.THREAD_POOL_EXECUTOR for long running tasks so that other async tasks can be used in parallel.
+### Other Changes
+* Jackson version changed to 2.2.0.
+* HttpClient version change to 4.2.5 (fixes an issue related to gzip,deflate).
+
+### Contributors
+Pascal Gélinas
+
+Pascal Deschenes
+
+Vladislav Fedotov
+
+David Venable
+
+Henrik Lundgren
+
+Dongsheng Wang
+
+Tim Perry
+
+David Venable
+
+Traun Leyden
+
+edwag
+
+npetzall
+
 Changes in version 1.3.0
 ------------------------
 Ektorp 1.3.0 brings support for CouchDB 1.2 and Jackson 1.9

@@ -29,9 +29,11 @@ import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DecompressingHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.cache.CacheConfig;
 import org.apache.http.impl.client.cache.CachingHttpClient;
+import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
@@ -120,9 +122,7 @@ public class StdHttpClient implements HttpClient {
 	private HttpResponse executePutPost(HttpEntityEnclosingRequestBase request,
 			String content, boolean useBackend) {
 		try {
-			if (LOG.isTraceEnabled()) {
-				LOG.trace("Content: {}", content);
-			}
+			LOG.trace("Content: {}", content);
 			StringEntity e = new StringEntity(content, "UTF-8");
 			e.setContentType("application/json");
 			request.setEntity(e);
@@ -149,11 +149,8 @@ public class StdHttpClient implements HttpClient {
 			} else {
 				rsp = client.execute((HttpHost)client.getParams().getParameter(ClientPNames.DEFAULT_HOST), request);				
 			}
-			if (LOG.isTraceEnabled()) {
-				LOG.trace(String.format("%s %s %s %s", request.getMethod(),
-						request.getURI(), rsp.getStatusLine().getStatusCode(),
-						rsp.getStatusLine().getReasonPhrase()));
-			}
+			LOG.trace("{} {} {} {}", new Object[] { request.getMethod(), request.getURI(),
+					rsp.getStatusLine().getStatusCode(), rsp.getStatusLine().getReasonPhrase() });
 			return StdHttpResponse.of(rsp, request);
 		} catch (Exception e) {
 			throw Exceptions.propagate(e);
@@ -193,6 +190,7 @@ public class StdHttpClient implements HttpClient {
 		boolean cleanupIdleConnections = true;
 		boolean useExpectContinue = true;
 		boolean caching = true;
+		boolean compression; // Default is false;
 		int maxObjectSizeBytes = 8192;
 		int maxCacheEntries = 1000;
 
@@ -241,6 +239,23 @@ public class StdHttpClient implements HttpClient {
 			proxy = s;
 			return this;
 		}
+		
+		/**
+		 * Controls if the http client should send Accept-Encoding: gzip,deflate
+		 * header and handle Content-Encoding responses. This enable compression
+		 * on the server; although not supported natively by CouchDB, you can
+		 * use a reverse proxy, such as nginx, in front of CouchDB to achieve
+		 * this.
+		 * <p>
+		 * Disabled by default (for backward compatibility).
+		 * 
+		 * @param b
+		 * @return This builder
+		 */
+		public Builder compression(boolean b){
+			compression = b;
+			return this;
+		}
 		/**
 		 * Controls if the http client should cache response entities.
 		 * Default is true.
@@ -267,7 +282,7 @@ public class StdHttpClient implements HttpClient {
 				SchemeRegistry schemeRegistry = new SchemeRegistry();
 				schemeRegistry.register(configureScheme());
 
-				ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(schemeRegistry);
+				PoolingClientConnectionManager cm = new PoolingClientConnectionManager(schemeRegistry);
 				cm.setMaxTotal(maxConnections);
 				cm.setDefaultMaxPerRoute(maxConnections);
 				conman = cm;
@@ -338,8 +353,8 @@ public class StdHttpClient implements HttpClient {
 				params.setParameter(ConnRoutePNames.DEFAULT_PROXY,
 						new HttpHost(proxy, proxyPort, protocol));
 			}
-			DefaultHttpClient client = new DefaultHttpClient(
-					configureConnectionManager(params), params);
+			ClientConnectionManager connectionManager = configureConnectionManager(params);
+			DefaultHttpClient client = new DefaultHttpClient(connectionManager, params);
 			if (username != null && password != null) {
 				client.getCredentialsProvider().setCredentials(
 						new AuthScope(host, port, AuthScope.ANY_REALM),
@@ -348,8 +363,9 @@ public class StdHttpClient implements HttpClient {
 						new PreemptiveAuthRequestInterceptor(), 0);
 			}
 			
-			
-			
+			if (compression) {
+				return new DecompressingHttpClient(client);
+			}
 			return client;
 		}
 

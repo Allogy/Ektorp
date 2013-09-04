@@ -5,9 +5,10 @@ import static org.junit.Assert.*;
 import java.util.*;
 
 import org.apache.commons.io.*;
-import org.codehaus.jackson.map.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ektorp.util.*;
 import org.junit.*;
+
 
 
 public class ReplicationCommandTest {
@@ -41,7 +42,7 @@ public class ReplicationCommandTest {
 									.cancel(true)
 									.continuous(true)
 									.createTarget(true)
-									.docIds(Arrays.asList(new String[] {"foo", "bar", "baz"}))
+									.docIds(Arrays.asList("foo", "bar", "baz"))
 									.queryParams(queryParams)
 									.build();
 		

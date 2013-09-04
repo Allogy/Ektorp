@@ -4,9 +4,9 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import org.codehaus.jackson.*;
-import org.codehaus.jackson.map.*;
-import org.codehaus.jackson.map.type.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import org.ektorp.*;
 import org.ektorp.docref.*;
 import org.ektorp.impl.*;
@@ -15,20 +15,18 @@ import org.slf4j.*;
 public class ViewBasedCollection implements InvocationHandler {
 
 	private final static Logger LOG = LoggerFactory.getLogger(ViewBasedCollection.class);
-	
+
 	final String id;
 	final CouchDbConnector couchDbConnector;
 	final Class<?> clazz;
 	final DocumentReferences referenceMetaData;
 	final ConstructibleAnnotatedCollection constructibleAnnotatedCollection;
 	final Collection<?> collection;
-	final ObjectMapper objectMapper;
 	private final Collection<BulkDeleteDocument> pendingRemoval = new LinkedHashSet<BulkDeleteDocument>();
 
 	public ViewBasedCollection(String id, CouchDbConnector couchDbConnector,
 			Class<?> clazz, DocumentReferences documentReferences,
-			ConstructibleAnnotatedCollection constructibleField,
-			ObjectMapper objectMapper) throws IllegalArgumentException,
+			ConstructibleAnnotatedCollection constructibleField) throws IllegalArgumentException,
 			InstantiationException, IllegalAccessException,
 			InvocationTargetException {
 		this.id = id;
@@ -37,7 +35,6 @@ public class ViewBasedCollection implements InvocationHandler {
 		this.referenceMetaData = documentReferences;
 		this.constructibleAnnotatedCollection = constructibleField;
 		this.collection = constructibleField.getConstructor().newInstance();
-		this.objectMapper = objectMapper;
 	}
 
 	private List<?> loadFromBackReferences(String thisId,
@@ -83,13 +80,12 @@ public class ViewBasedCollection implements InvocationHandler {
 			start = end;
 			end = tmp;
 		}
-		
-		ViewQuery query = new ViewQuery().designDocId(resolveDesignDocId(ann))
+
+		return new ViewQuery().designDocId(resolveDesignDocId(ann))
 				.viewName(resolveViewName(ann, fieldName))
 				.includeDocs(true)
 				.descending(ann.descendingSortOrder()).startKey(start)
 				.endKey(end);
-		return query;
 	}
 
 	private String resolveViewName(DocumentReferences ann, String fieldName) {
@@ -120,7 +116,7 @@ public class ViewBasedCollection implements InvocationHandler {
 			addToPendingRemoval(args[0]);
 		}
 		if (method.getName().equals("removeAll")) {
-			addToPendingRemoval((Collection<? extends Object>) args[0]);
+			addToPendingRemoval(args[0]);
 		}
 		if (method.getName().equals("retainAll")) {
 			addToPendingRemoval(difference(collection, (Collection<?>) args[0]));

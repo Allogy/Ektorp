@@ -6,21 +6,22 @@ import java.io.*;
 import java.util.*;
 
 import org.apache.commons.io.*;
-import org.codehaus.jackson.map.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class JSONComparator {
 
 	private final static String UTF_8 = "UTF-8";
-	
+
 	private static Map<Class<?>, ValueComparator> valueComparators = new ClassHierarchyMap<ValueComparator>();
 	static {
 		valueComparators.put(Map.class, new MapComparator());
 		valueComparators.put(List.class, new ListComparator());
 		valueComparators.put(Object.class, new ObjectComparator());
 	}
-	
+
 	private JSONComparator() {}
-	
+
 	@SuppressWarnings("unchecked")
 	public static boolean areEqual(String jsonA, String jsonB) {
 		ObjectMapper om = new ObjectMapper();
@@ -36,17 +37,14 @@ public class JSONComparator {
 	private static boolean areEquals(Map<String, ?> mapA, Map<String, ?> mapB) {
 		return valueComparators.get(Map.class).equals(mapA,mapB);
 	}
-	
+
 	private static boolean compareValue(Object aValue, Object bValue) {
 		if (bValue == null) {
 			return false;
-		}		
-		ValueComparator vp = getComparator(aValue);
-		if (!vp.equals(aValue, bValue)) {
-			return false;
 		}
-		return true;
-	}
+		ValueComparator vp = getComparator(aValue);
+        return vp.equals(aValue, bValue);
+    }
 
 	private static ValueComparator getComparator(Object aValue) {
 		ValueComparator vp = valueComparators.get(aValue.getClass());
@@ -57,19 +55,19 @@ public class JSONComparator {
 	}
 
 	private static interface ValueComparator {
-		
+
 		boolean equals(Object a, Object b);
-		
+
 	}
-	
+
 	private static class ObjectComparator implements ValueComparator {
 
 		public boolean equals(Object a, Object b) {
 			return a.equals(b);
 		}
-		
+
 	}
-	
+
 	private static class MapComparator implements ValueComparator {
 
 		@SuppressWarnings("unchecked")
@@ -94,9 +92,9 @@ public class JSONComparator {
 				return false;
 			}
 		}
-		
+
 	}
-	
+
 	private static class ListComparator implements ValueComparator {
 
 		public boolean equals(Object a, Object b) {

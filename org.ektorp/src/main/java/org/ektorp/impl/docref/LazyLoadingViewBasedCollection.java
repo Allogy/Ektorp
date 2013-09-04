@@ -2,9 +2,9 @@ package org.ektorp.impl.docref;
 
 import java.lang.reflect.*;
 
-import org.codehaus.jackson.map.*;
 import org.ektorp.*;
 import org.ektorp.docref.*;
+
 
 public class LazyLoadingViewBasedCollection extends ViewBasedCollection {
 
@@ -13,12 +13,11 @@ public class LazyLoadingViewBasedCollection extends ViewBasedCollection {
 	public LazyLoadingViewBasedCollection(String id,
 			CouchDbConnector couchDbConnector, Class<?> clazz,
 			DocumentReferences documentReferences,
-			ConstructibleAnnotatedCollection constructibleField,
-			ObjectMapper objectMapper) throws IllegalArgumentException,
+			ConstructibleAnnotatedCollection constructibleField) throws IllegalArgumentException,
 			InstantiationException, IllegalAccessException,
 			InvocationTargetException {
 		super(id, couchDbConnector, clazz, documentReferences,
-				constructibleField, objectMapper);
+				constructibleField);
 		lazyReferences = true;
 	}
 

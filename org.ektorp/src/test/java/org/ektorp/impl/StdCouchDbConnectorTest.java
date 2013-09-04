@@ -1,10 +1,7 @@
 package org.ektorp.impl;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -17,9 +14,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 import org.apache.commons.io.IOUtils;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.annotate.JsonPropertyOrder;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
+
 import org.ektorp.*;
 import org.ektorp.http.HttpResponse;
 import org.ektorp.http.StdHttpClient;
@@ -33,18 +29,30 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.internal.verification.VerificationModeFactory;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class StdCouchDbConnectorTest {
 
     private static final String OK_RESPONSE_WITH_ID_AND_REV = "{\"ok\":true,\"id\":\"some_id\",\"rev\":\"123D123\"}";
 	private static final String TEST_DB_PATH = "/test_db/";
-    StdCouchDbConnector dbCon;
+    CouchDbConnector dbCon;
     StdHttpClient httpClient;
     TestDoc td = new TestDoc();
 
     @Before
     public void setUp() throws Exception {
         httpClient = mock(StdHttpClient.class);
-        dbCon = new StdCouchDbConnector("test_db/", new StdCouchDbInstance(httpClient));
+        StdCouchDbInstance dbInstance = new StdCouchDbInstance(httpClient, new StdObjectMapperFactory(){
+        	@Override
+        	public ObjectMapper createObjectMapper(CouchDbConnector connector) {
+        		ObjectMapper mapper = super.createObjectMapper(connector);
+        		mapper.registerModule(new JodaModule());
+        		return mapper;
+        	}
+        });
+		dbCon = dbInstance.createConnector("test_db/",false);
 
         td.name = "nisse";
         td.age = 12;
@@ -250,6 +258,20 @@ public class StdCouchDbConnectorTest {
         assertEquals(8, l.size());
         assertEquals(new Revision("8-8395fd3a7a2dd04022cc1330a4d20e66", "available"), l.get(0));
     }
+    
+    @Test
+	public void return_current_revision() {
+		final String revision = UUID.randomUUID().toString();
+		when(httpClient.head("/test_db/some_doc_id")).thenReturn(
+				new HttpResponseStub(200, "") {
+					@Override
+					public String getETag() {
+						return revision;
+					}
+				});
+		String currentRevision = dbCon.getCurrentRevision("some_doc_id");
+		assertEquals(revision, currentRevision);
+	}
 
     @Test
     public void return_null_revisions_when_doc_is_missing() {
@@ -361,7 +383,7 @@ public class StdCouchDbConnectorTest {
                 .dbPath(TEST_DB_PATH)
                 .designDocId("_design/testdoc")
                 .viewName("test_view")
-                .includeDocs(true)                
+                .includeDocs(true)
                 .keys(Arrays.asList("doc_id0", "doc_id1", "doc_id2", "doc_id3", "doc_id4", "doc_id5", "doc_id6"));
         query.setIgnoreNotFound(true);
 
@@ -384,7 +406,6 @@ public class StdCouchDbConnectorTest {
         keys.add("key1");
         keys.add("key2");
         keys.add("key3");
-        ;
 
         ViewQuery query = new ViewQuery()
                 .dbPath(TEST_DB_PATH)

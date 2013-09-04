@@ -3,9 +3,8 @@ package org.ektorp;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.node.ObjectNode;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.node.*;
 import org.ektorp.util.Base64;
 import org.ektorp.util.Exceptions;
 
@@ -80,7 +79,7 @@ public class PageRequest {
 					.decode(link, Base64.URL_SAFE)));
 
 			KeyIdPair key = parseNextKey(n);
-			int pageSize = n.get(PAGE_SIZE_FIELD_NAME).getIntValue();
+			int pageSize = n.get(PAGE_SIZE_FIELD_NAME).intValue();
 			boolean back = n.get(BACK_FIELD_NAME).asInt() == 1;
 			int page = n.get(PAGE_FIELD_NAME).asInt();
 			return new Builder()
@@ -102,7 +101,7 @@ public class PageRequest {
 		KeyIdPair key;
 		JsonNode nextKey = n.get(fieldName);
 		if (nextKey != null) {
-			String docId = nextKey.getFieldNames().next();
+			String docId = nextKey.fieldNames().next();
 			key = new KeyIdPair(nextKey.get(docId), docId);
 		} else {
 			key = null;
@@ -194,10 +193,8 @@ public class PageRequest {
 			return false;
 		if (page != other.page)
 			return false;
-		if (pageSize != other.pageSize)
-			return false;
-		return true;
-	}
+        return pageSize == other.pageSize;
+    }
 
 
 
